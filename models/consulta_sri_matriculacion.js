@@ -3,9 +3,15 @@ const chrome = require("selenium-webdriver/chrome");
 
 async function extraerDatos(placa) {
     const options = new chrome.Options();
-    options.addArguments("--headless");
-    options.addArguments("--disable-gpu");
-    options.addArguments("--no-sandbox");
+    options.addArguments(
+        "--headless=new",
+        "--no-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--disable-software-rasterizer",
+        "--disable-setuid-sandbox",
+        "--remote-debugging-port=9222"
+    );
 
     let driver = await new Builder()
         .forBrowser("chrome")

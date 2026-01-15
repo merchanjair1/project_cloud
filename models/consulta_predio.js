@@ -1,9 +1,24 @@
 const { Builder, By, until, Key } = require('selenium-webdriver');
+const chrome = require('selenium-webdriver/chrome');
 
 const RUBRO_FIJO = "PREDIO URBANO";
 
 async function iniciarDriver() {
-    return await new Builder().forBrowser('chrome').build();
+    const options = new chrome.Options();
+    options.addArguments(
+        "--headless=new",
+        "--no-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--disable-software-rasterizer",
+        "--disable-setuid-sandbox",
+        "--remote-debugging-port=9222"
+    );
+
+    return await new Builder()
+        .forBrowser('chrome')
+        .setChromeOptions(options)
+        .build();
 }
 
 async function llenarFormulario(driver, cedula) {
