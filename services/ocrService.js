@@ -1,5 +1,12 @@
 const { ImageAnnotatorClient } = require('@google-cloud/vision');
-const client = new ImageAnnotatorClient();
+
+const client = new ImageAnnotatorClient({
+  credentials: {
+    client_email: process.env.GOOGLE_CLIENT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined,
+  },
+  projectId: process.env.GOOGLE_PROJECT_ID,
+});
 
 async function detectTextFromBase64(base64Image) {
   // 1. Limpiamos el string eliminando 'url(', el ')' final y el prefijo 'data:image/...'
@@ -13,7 +20,7 @@ async function detectTextFromBase64(base64Image) {
 
   // 3. Procesamos con Google Vision
   const [result] = await client.documentTextDetection({ image: { content: imageBuffer } });
-  
+
   return result.fullTextAnnotation?.text || '';
 }
 
