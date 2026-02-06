@@ -1,0 +1,37 @@
+{
+  "cookies": [
+    {
+      "domain": ".loja.gob.ec",
+      "expiry": 1804898663,
+      "httpOnly": false,
+      "name": "_ga_NSX7RNV5MM",
+      "path": "/",
+      "sameSite": "Lax",
+      "secure": false,
+      "value": "GS2.1.s1770338442$o1$g1$t1770338663$j60$l0$h0"
+    },
+    {
+      "domain": ".loja.gob.ec",
+      "expiry": 1804898442,
+      "httpOnly": false,
+      "name": "_ga",
+      "path": "/",
+      "sameSite": "Lax",
+      "secure": true,
+      "value": "GA1.1.535757577.1770338443"
+    },
+    {
+      "domain": ".www.loja.gob.ec",
+      "expiry": 1772338546,
+      "httpOnly": false,
+      "name": "SSESScc5e795a4d8723bd11dc04d1f26131f8",
+      "path": "/",
+      "sameSite": "Lax",
+      "secure": true,
+      "value": "0gugV3HQ1IdyLJsG7Rpnw3GwaMoN4WWu_uTFtkrb-wY"
+    }
+  ],
+  "localStorage": "{\"_grecaptcha\":\"09AKhCRwhjqBvg7ebwg528sn4lGzb-jH7VEs6DPvpwaBWLNznEa4AbHiJQaBWZehvGsTh4Wsq-kclL4vS8bjS2GhTLkzxIegXmUFkQE8GhA9RpLGYNyKmQBjKbMm3xo4ty\"}",
+  "sessionStorage": "{}",
+  "timestamp": "2026-02-06T00:44:29.113Z"
+}
