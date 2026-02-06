@@ -1,13 +1,9 @@
 const visionService = require('../services/ocrService');
 const eerssaModel = require('../models/consulta_luz_eerssa');
 const sriModel = require('../models/consulta_sri_matriculacion');
-<<<<<<< HEAD
-
-=======
 const clearModel = require('../models/consulta_planes_claro');
 const antModel = require('../models/consulta_ant');
 const textoGeneralModel = require('../models/consulta_texto_general');
->>>>>>> 75c4cba (cambio servicios)
 const ResponseHandler = require('../utils/responseHandler');
 
 // Validación de Cédula (Algoritmo Módulo 10)
@@ -58,59 +54,38 @@ exports.processServiceQuery = async (req, res) => {
         let resultadoServicio = null;
 
         // 2. Lógica de Detección según Servicio
-<<<<<<< HEAD
         if (serviceType === 'luz_loja') {
-            // Buscar Cédula para luz
-            const matches = text.match(/\d{10}/g) || [];
-            console.log("Posibles cédulas encontradas:", matches);
-=======
-        if (['luz_loja'].includes(serviceType)) {
-            // Buscar Cédula para luz
             const matches = text.match(/\b\d{10}\b/g) || [];
->>>>>>> 75c4cba (cambio servicios)
             identificacion = matches.find(validateCedula);
-            console.log("Cédula validada seleccionada:", identificacion);
             tipoIdentificacion = 'cedula';
         } else if (serviceType === 'claro_planes') {
-            // Buscar número de celular
             const matches = text.match(/\b09\d{8}\b/g) || [];
             identificacion = matches.find(validateCelular);
             tipoIdentificacion = 'numero';
         } else if (serviceType === 'sri_matriculacion') {
-            // Buscar Placa para sri
             identificacion = extractPlaca(text);
             tipoIdentificacion = 'placa';
-<<<<<<< HEAD
         } else if (serviceType === 'ocr_cedula') {
-            // Lógica especial para doble OCR (Frontal + Trasera)
             identificacion = (text.match(/\d{10}/g) || []).find(validateCedula);
             tipoIdentificacion = 'cedula';
 
-            // Si hay segunda imagen, procesarla
             let textBack = '';
             if (req.body.base64ImageBack) {
                 console.log("[OCR] Procesando reverso...");
                 textBack = await visionService.detectTextFromBase64(req.body.base64ImageBack);
-                console.log("Texto reverso detectado:", textBack);
             }
 
-            // Combinar textos para el frontend
-            // Enviamos un objeto especial como resultado servicio para que el front lo pinte mas fácil
             resultadoServicio = {
                 ocr_frontal: text,
                 ocr_reverso: textBack,
-                // Extraer algunos datos básicos aqui si es posible, aunque el front ya tiene lógica
                 es_doble_cara: true
             };
 
-            // Bypass de validación 'notFound' porque en modo OCR siempre devolvemos lo que hayamos leído
             if (!identificacion) identificacion = "NO_DETECTADA";
-=======
         } else if (serviceType === 'texto_general') {
             identificacion = "TEXTO_GENERAL";
             tipoIdentificacion = 'texto';
         } else if (serviceType === 'ant_multas') {
-            // ANT acepta cédula o placa. Intentamos detectar ambas.
             const cedulaMatch = (text.match(/\b\d{10}\b/g) || []).find(validateCedula);
             const placaMatch = extractPlaca(text);
 
@@ -121,7 +96,6 @@ exports.processServiceQuery = async (req, res) => {
                 identificacion = placaMatch;
                 tipoIdentificacion = 'placa';
             }
->>>>>>> 75c4cba (cambio servicios)
         } else {
             return ResponseHandler.badRequest(res, 'Tipo de servicio no soportado.');
         }
@@ -135,8 +109,6 @@ exports.processServiceQuery = async (req, res) => {
             resultadoServicio = await eerssaModel.consultarDeuda(identificacion, 'cedula');
         } else if (serviceType === 'sri_matriculacion') {
             resultadoServicio = await sriModel.extraerDatos(identificacion);
-<<<<<<< HEAD
-=======
         } else if (serviceType === 'claro_planes') {
             resultadoServicio = await clearModel.extraerDatos(identificacion);
         } else if (serviceType === 'texto_general') {
@@ -144,43 +116,36 @@ exports.processServiceQuery = async (req, res) => {
         } else if (serviceType === 'ant_multas') {
             const queryType = tipoIdentificacion === 'placa' ? 'PLA' : 'CED';
             resultadoServicio = await antModel.extraerDatos(identificacion, queryType);
->>>>>>> 75c4cba (cambio servicios)
         }
-        // Para 'ocr_cedula' el resultadoServicio ya se construyó arriba
 
         // 4. Responder
         if (!resultadoServicio) {
             return ResponseHandler.notFound(res, `No se encontraron datos en el servicio para: ${identificacion}`);
         }
 
-        // Determine message (similar logic to individual controllers)
         let message = "Operación exitosa";
         if (serviceType === 'luz_loja') {
             if (!resultadoServicio.deuda && resultadoServicio.contribuyente) message = "no tiene valores por pagar";
-            else if (!resultadoServicio.deuda && !resultadoServicio.contribuyente) message = "no tiene valores por pagar"; // Fallback if internal logic changes
+            else if (!resultadoServicio.deuda && !resultadoServicio.contribuyente) message = "no tiene valores por pagar";
         } else if (serviceType === 'sri_matriculacion') {
             const noPago = !resultadoServicio.totalPagar || resultadoServicio.totalPagar === "No disponible" || parseFloat(resultadoServicio.totalPagar.replace(/[^\d.-]/g, '')) === 0;
             if (noPago) message = "no tiene valores por pagar";
-<<<<<<< HEAD
-=======
         } else if (serviceType === 'claro_planes') {
-            message = "Consulta de Claro existosa";
+            message = "Consulta de Claro exitosa";
         } else if (serviceType === 'texto_general') {
             message = "Texto extraído correctamente";
         } else if (serviceType === 'ant_multas') {
             message = resultadoServicio.mensaje || "Consulta de ANT completada";
->>>>>>> 75c4cba (cambio servicios)
         }
 
         ResponseHandler.success(res, {
             identificacion_detectada: identificacion,
             tipo_detectado: tipoIdentificacion,
             datos_servicio: resultadoServicio,
-            texto_detectado: text // Agregamos el texto crudo para extraer nombre en frontend
+            texto_detectado: text
         }, message);
 
     } catch (error) {
-        // console.error("Error en orquestador:", error);
         ResponseHandler.internalError(res, error);
     }
 };
