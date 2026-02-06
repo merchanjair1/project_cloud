@@ -1,8 +1,7 @@
 const visionService = require('../services/ocrService');
 const eerssaModel = require('../models/consulta_luz_eerssa');
 const sriModel = require('../models/consulta_sri_matriculacion');
-const aguaModel = require('../models/consulta_agua');
-const predioModel = require('../models/consulta_predio');
+
 const ResponseHandler = require('../utils/responseHandler');
 
 // Validación de Cédula (Algoritmo Módulo 10)
@@ -47,20 +46,46 @@ exports.processServiceQuery = async (req, res) => {
         let resultadoServicio = null;
 
         // 2. Lógica de Detección según Servicio
-        if (['luz_loja', 'agua_loja', 'predio_urbano'].includes(serviceType)) {
-            // Buscar Cédula para luz, agua y predio
-            const matches = text.match(/\b\d{10}\b/g) || [];
+        if (serviceType === 'luz_loja') {
+            // Buscar Cédula para luz
+            const matches = text.match(/\d{10}/g) || [];
+            console.log("Posibles cédulas encontradas:", matches);
             identificacion = matches.find(validateCedula);
+            console.log("Cédula validada seleccionada:", identificacion);
             tipoIdentificacion = 'cedula';
         } else if (serviceType === 'sri_matriculacion') {
             // Buscar Placa para sri
             identificacion = extractPlaca(text);
             tipoIdentificacion = 'placa';
+        } else if (serviceType === 'ocr_cedula') {
+            // Lógica especial para doble OCR (Frontal + Trasera)
+            identificacion = (text.match(/\d{10}/g) || []).find(validateCedula);
+            tipoIdentificacion = 'cedula';
+
+            // Si hay segunda imagen, procesarla
+            let textBack = '';
+            if (req.body.base64ImageBack) {
+                console.log("[OCR] Procesando reverso...");
+                textBack = await visionService.detectTextFromBase64(req.body.base64ImageBack);
+                console.log("Texto reverso detectado:", textBack);
+            }
+
+            // Combinar textos para el frontend
+            // Enviamos un objeto especial como resultado servicio para que el front lo pinte mas fácil
+            resultadoServicio = {
+                ocr_frontal: text,
+                ocr_reverso: textBack,
+                // Extraer algunos datos básicos aqui si es posible, aunque el front ya tiene lógica
+                es_doble_cara: true
+            };
+
+            // Bypass de validación 'notFound' porque en modo OCR siempre devolvemos lo que hayamos leído
+            if (!identificacion) identificacion = "NO_DETECTADA";
         } else {
             return ResponseHandler.badRequest(res, 'Tipo de servicio no soportado.');
         }
 
-        if (!identificacion) {
+        if (!identificacion && serviceType !== 'ocr_cedula') {
             return ResponseHandler.notFound(res, `No se pudo detectar un documento válido para ${serviceType}. Texto: ${text.substring(0, 50)}...`);
         }
 
@@ -69,11 +94,8 @@ exports.processServiceQuery = async (req, res) => {
             resultadoServicio = await eerssaModel.consultarDeuda(identificacion, 'cedula');
         } else if (serviceType === 'sri_matriculacion') {
             resultadoServicio = await sriModel.extraerDatos(identificacion);
-        } else if (serviceType === 'agua_loja') {
-            resultadoServicio = await aguaModel.consultarDeuda(identificacion);
-        } else if (serviceType === 'predio_urbano') {
-            resultadoServicio = await predioModel.consultarDeuda(identificacion);
         }
+        // Para 'ocr_cedula' el resultadoServicio ya se construyó arriba
 
         // 4. Responder
         if (!resultadoServicio) {
@@ -88,14 +110,13 @@ exports.processServiceQuery = async (req, res) => {
         } else if (serviceType === 'sri_matriculacion') {
             const noPago = !resultadoServicio.totalPagar || resultadoServicio.totalPagar === "No disponible" || parseFloat(resultadoServicio.totalPagar.replace(/[^\d.-]/g, '')) === 0;
             if (noPago) message = "no tiene valores por pagar";
-        } else if (serviceType === 'agua_loja' || serviceType === 'predio_urbano') {
-            if (!resultadoServicio.servicios || resultadoServicio.servicios.length === 0) message = "no tiene valores por pagar";
         }
 
         ResponseHandler.success(res, {
             identificacion_detectada: identificacion,
             tipo_detectado: tipoIdentificacion,
-            datos_servicio: resultadoServicio
+            datos_servicio: resultadoServicio,
+            texto_detectado: text // Agregamos el texto crudo para extraer nombre en frontend
         }, message);
 
     } catch (error) {

@@ -68,11 +68,28 @@ async function extraerDatosTabla(driver, selector) {
         let datos = [];
 
         for (let fila of filas) {
-            let celdas = await fila.findElements(By.css("td, th"));
+            let celdas = await fila.findElements(By.css("td"));
+            // Si no hay td, intentar con th (encabezados)
+            if (celdas.length === 0) {
+                celdas = await fila.findElements(By.css("th"));
+            }
+
             let filaData = await Promise.all(celdas.map(celda => celda.getText()));
-            if (filaData.some(d => d.trim() !== '')) datos.push(filaData);
+            // Filtrar filas vacías y limpiar datos
+            filaData = filaData.map(d => d.trim()).filter(d => d !== '');
+
+            if (filaData.length > 0) {
+                datos.push(filaData);
+            }
         }
-        return datos;
+
+        // La primera fila suele ser datos del contribuyente (N° Servicio, Nombre, Dirección)
+        // Devolver solo la primera fila con datos reales, no encabezados
+        return datos.filter(row => !row.some(cell =>
+            cell.toUpperCase().includes('CUENTA') ||
+            cell.toUpperCase().includes('NOMBRE') ||
+            cell.toUpperCase().includes('DIRECCION')
+        ));
     } catch {
         return [];
     }

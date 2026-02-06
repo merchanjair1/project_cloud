@@ -9,7 +9,9 @@ const client = new ImageAnnotatorClient({
 });
 
 async function detectTextFromBase64(base64Image) {
-  // 1. Limpiamos el string eliminando 'url(', el ')' final y el prefijo 'data:image/...'
+  console.log('[OCR] Procesando imagen con Google Cloud Vision...');
+
+  // 1. Limpiamos el string eliminando prefijos si los hay
   const cleanedString = base64Image
     .replace(/^url\(/, '')                             // Quita 'url(' al inicio
     .replace(/\)$/, '')                                // Quita ')' al final
@@ -21,7 +23,10 @@ async function detectTextFromBase64(base64Image) {
   // 3. Procesamos con Google Vision
   const [result] = await client.documentTextDetection({ image: { content: imageBuffer } });
 
-  return result.fullTextAnnotation?.text || '';
+  const detectedText = result.fullTextAnnotation?.text || '';
+  console.log('[OCR] Texto detectado:', detectedText.substring(0, 100) + '...');
+
+  return detectedText;
 }
 
 module.exports = { detectTextFromBase64 };

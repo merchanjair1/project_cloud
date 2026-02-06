@@ -7,10 +7,8 @@ async function extraerDatos(placa) {
         "--headless=new",
         "--no-sandbox",
         "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--disable-software-rasterizer",
         "--disable-setuid-sandbox",
-        "--remote-debugging-port=9222"
+        "--window-size=1920,1080"
     );
 
     let driver = await new Builder()
@@ -22,7 +20,10 @@ async function extraerDatos(placa) {
         await driver.get("https://srimatricula.com/");
         console.log("Accediendo a la página...");
 
-        let inputPlaca = await driver.wait(until.elementLocated(By.id("txtPlaca")), 5000);
+        // Esperar a que el input sea visible e interactuable
+        let inputPlaca = await driver.wait(until.elementLocated(By.id("txtPlaca")), 10000);
+        await driver.wait(until.elementIsVisible(inputPlaca), 10000);
+
         await inputPlaca.sendKeys(placa);
         console.log(`Placa ingresada: ${placa}`);
 
