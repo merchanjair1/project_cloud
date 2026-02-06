@@ -11,11 +11,8 @@ router.post('/detect-text', visionController.detectText);
 router.post('/consultar-luz_loja', deudaController.getDeuda);
 router.post('/consultar-sri_matriculacion', consultaSRIController.consultarDatos);
 router.post('/consultar-servicio-ocr', orchestratorController.processServiceQuery);
-<<<<<<< HEAD
-
-=======
 router.post('/consultar-claro', claroController.consultarDatos);
 router.post('/consultar-ant', antController.consultarDatos);
->>>>>>> 75c4cba (cambio servicios)
+
 
 module.exports = router;
