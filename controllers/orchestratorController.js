@@ -106,6 +106,8 @@ exports.processServiceQuery = async (req, res) => {
                 mensajeAmigable = 'No se pudo detectar un número de cédula válido en la imagen. Por favor, asegúrese de que la foto sea clara y legible.';
             } else if (serviceType === 'sri_matriculacion') {
                 mensajeAmigable = 'No se pudo detectar un número de placa válido en la imagen. Por favor, intente con una foto más clara.';
+            } else if (serviceType === 'ant_multas') {
+                mensajeAmigable = 'No se pudo detectar un número de cédula válido en la imagen para consultar multas ANT.';
             } else {
                 mensajeAmigable = `No se pudo detectar un documento válido para ${serviceType}.`;
             }
@@ -134,6 +136,8 @@ exports.processServiceQuery = async (req, res) => {
                 mensajeNoEncontrado = `La cédula ${identificacion} NO ESTA REGISTRADA como cliente del servicio de luz eléctrica (EERSSA).`;
             } else if (serviceType === 'sri_matriculacion') {
                 mensajeNoEncontrado = `No se encontró información de matriculación vehicular para la placa ${identificacion}.`;
+            } else if (serviceType === 'ant_multas') {
+                mensajeNoEncontrado = `No se encontraron multas registradas en la ANT para la cédula ${identificacion}.`;
             } else {
                 mensajeNoEncontrado = `No se encontraron datos en el servicio para: ${identificacion}`;
             }
