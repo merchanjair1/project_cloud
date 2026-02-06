@@ -3,10 +3,7 @@ const chrome = require("selenium-webdriver/chrome");
 
 async function extraerDatos(num) {
     const options = new chrome.Options();
-    // En producción (Render) debe ser headless
-    if (process.env.NODE_ENV === 'production') {
-        options.addArguments("--headless=new");
-    }
+    options.addArguments("--headless=new");
     options.addArguments("--disable-gpu");
     options.addArguments("--no-sandbox");
     options.addArguments("--disable-dev-shm-usage");

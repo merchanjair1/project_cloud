@@ -3,9 +3,7 @@ const chrome = require("selenium-webdriver/chrome");
 
 async function extraerDatos(identificacion, tipo = "CED") {
     const options = new chrome.Options();
-    if (process.env.NODE_ENV === 'production') {
-        options.addArguments("--headless=new");
-    }
+    options.addArguments("--headless=new");
     options.addArguments("--disable-gpu");
     options.addArguments("--no-sandbox");
     options.addArguments("--disable-dev-shm-usage");
