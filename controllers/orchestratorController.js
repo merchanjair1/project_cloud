@@ -39,7 +39,7 @@ exports.processServiceQuery = async (req, res) => {
 
         // 1. OCR: Extraer texto de la imagen
         const text = await visionService.detectTextFromBase64(base64Image);
-        console.log("Texto detectado:", text); // Para depuración
+        console.log("Texto detectado aqui:", text); // Para depuración
 
         let identificacion = null;
         let tipoIdentificacion = null;
