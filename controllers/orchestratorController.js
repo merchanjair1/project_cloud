@@ -101,7 +101,15 @@ exports.processServiceQuery = async (req, res) => {
         }
 
         if (!identificacion && serviceType !== 'ocr_cedula') {
-            return ResponseHandler.notFound(res, `No se pudo detectar un documento válido para ${serviceType}. Texto: ${text.substring(0, 50)}...`);
+            let mensajeAmigable = '';
+            if (serviceType === 'luz_loja') {
+                mensajeAmigable = 'No se pudo detectar un número de cédula válido en la imagen. Por favor, asegúrese de que la foto sea clara y legible.';
+            } else if (serviceType === 'sri_matriculacion') {
+                mensajeAmigable = 'No se pudo detectar un número de placa válido en la imagen. Por favor, intente con una foto más clara.';
+            } else {
+                mensajeAmigable = `No se pudo detectar un documento válido para ${serviceType}.`;
+            }
+            return ResponseHandler.notFound(res, mensajeAmigable);
         }
 
         // 3. Consultar Servicio Automáticamente
@@ -120,7 +128,16 @@ exports.processServiceQuery = async (req, res) => {
 
         // 4. Responder
         if (!resultadoServicio) {
-            return ResponseHandler.notFound(res, `No se encontraron datos en el servicio para: ${identificacion}`);
+            // Mensaje más específico según el tipo de servicio
+            let mensajeNoEncontrado = '';
+            if (serviceType === 'luz_loja') {
+                mensajeNoEncontrado = `La cédula ${identificacion} NO ESTA REGISTRADA como cliente del servicio de luz eléctrica (EERSSA).`;
+            } else if (serviceType === 'sri_matriculacion') {
+                mensajeNoEncontrado = `No se encontró información de matriculación vehicular para la placa ${identificacion}.`;
+            } else {
+                mensajeNoEncontrado = `No se encontraron datos en el servicio para: ${identificacion}`;
+            }
+            return ResponseHandler.notFound(res, mensajeNoEncontrado);
         }
 
         let message = "Operación exitosa";
