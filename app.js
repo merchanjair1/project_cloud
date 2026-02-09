@@ -15,8 +15,11 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 
 // CONFIGURACIÓN DE CORS
-var cors = require('cors');
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // MIDDLEWARE DE DEBUG - Ver si las peticiones llegan (ANTES de body parser)
 app.use((req, res, next) => {
