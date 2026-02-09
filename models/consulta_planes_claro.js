@@ -80,19 +80,62 @@ async function extraerDatos(num) {
         }
 
         console.log("🚀 Consulta realizada. Esperando resultado...");
-        await driver.sleep(6000);
+        await driver.sleep(6000); // CRÍTICO: Esperar a que cargue la respuesta
 
-        // Extraer texto del resultado (XPath o selector genérico)
-        let paragraphText = "";
+        // DEBUG: Guardar el HTML siempre para análisis
+        const fs = require('fs');
+        const debugPath = 'd:\\Proyectos\\PROYECTO_OCR\\debug_claro.html';
         try {
-            paragraphText = await driver.wait(until.elementLocated(By.xpath(XPATH_RESULTADO)), 10000).getText();
-            console.log("✅ Resultado extraído por XPath.");
-        } catch (e) {
-            console.log("⚠️ XPath del resultado falló, buscando etiqueta 'p' o 'span'...");
-            paragraphText = await driver.findElement(By.css('p, span.resultado, .result-text')).getText();
+            const pageSource = await driver.getPageSource();
+            fs.writeFileSync(debugPath, pageSource);
+            console.log(`✅ HTML guardado en: ${debugPath}`);
+        } catch (err) {
+            console.error("❌ Error guardando debug HTML:", err);
         }
 
-        return paragraphText;
+        // ANÁLISIS DE TEXTO VISIBLE (no source completo para evitar falsos positivos)
+        let visibleText = "";
+        try {
+            visibleText = await driver.findElement(By.tagName('body')).getText();
+            console.log("📄 Texto visible capturado (primeros 500 chars):", visibleText.substring(0, 500));
+        } catch (err) {
+            console.error("❌ Error extrayendo texto visible:", err);
+            return null;
+        }
+
+        const lowerText = visibleText.toLowerCase();
+
+        // CASO 1: Errores específicos detectados PRIMERO (PRIORIDAD)
+        if (lowerText.includes("no tenemos información") && lowerText.includes("servicio disponible para clientes postpago")) {
+            console.log("❌ Detectado: Número prepago o sin plan postpago.");
+            return null;
+        }
+
+        if (lowerText.includes("no tenemos información") && lowerText.includes("vuelve a ingresarla")) {
+            console.log("❌ Detectado: Número inválido (no existe).");
+            return null;
+        }
+
+        if (lowerText.includes("verifica que sea correcta")) {
+            console.log("❌ Detectado: Error de validación del número.");
+            return null;
+        }
+
+        // CASO 2: Éxito - Número válido sin deuda
+        if (lowerText.includes("tu línea no tiene deuda activa") || lowerText.includes("no tienes pagos pendientes")) {
+            console.log("✅ Detectado: Número válido sin deuda activa.");
+            return "Tu línea no tiene deuda activa.";
+        }
+
+        if (lowerText.includes("buenas noticias") && lowerText.includes("no tiene pagos pendientes")) {
+            console.log("✅ Detectado: Sin pagos pendientes.");
+            return "Tu línea no tiene deuda activa.";
+        }
+
+        // Si no se detectó ningún patrón conocido
+        console.log("⚠️ No se detectó ningún patrón conocido en el texto visible.");
+        console.log("🔍 Texto completo:", visibleText);
+        return null;
 
     } catch (error) {
         console.error("Error en model Claro:", error.message);

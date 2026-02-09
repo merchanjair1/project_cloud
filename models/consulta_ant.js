@@ -17,25 +17,98 @@ async function extraerDatos(identificacion, tipo = "CED") {
         await driver.get("https://consultaweb.ant.gob.ec/PortalWEB/paginas/clientes/clp_criterio_consulta.jsp");
         console.log("Accediendo a la página de ANT...");
 
+        // Esperar que la página cargue completamente
+        await driver.sleep(2000);
+
         // 1. Seleccionar tipo (CED o PLA)
         let selectTipo = await driver.wait(until.elementLocated(By.id("ps_tipo_identificacion")), 10000);
-        await selectTipo.sendKeys(tipo);
+        await driver.sleep(500);
+
+        try {
+            await selectTipo.sendKeys(tipo);
+        } catch (e) {
+            console.log("sendKeys falló en select, usando JavaScript...");
+            await driver.executeScript(`document.getElementById('ps_tipo_identificacion').value = '${tipo}'`);
+        }
 
         // 2. Ingresar la identificación
         let inputIdentificacion = await driver.findElement(By.id("ps_identificacion"));
-        await inputIdentificacion.sendKeys(identificacion);
+        await driver.sleep(500);
+
+        try {
+            await inputIdentificacion.sendKeys(identificacion);
+        } catch (e) {
+            console.log("sendKeys falló en input, usando JavaScript...");
+            await driver.executeScript(`document.getElementById('ps_identificacion').value = '${identificacion}'`);
+        }
         console.log(`Buscando ${tipo}: ${identificacion}`);
 
         // 3. Clic en el botón de búsqueda (icono de lupa)
-        // El botón es un link que llama a javascript:validar()
-        let btnBusqueda = await driver.findElement(By.css("a[href*='validar']"));
-        await btnBusqueda.click();
+        await driver.sleep(1000);
+
+        try {
+            let btnBusqueda = await driver.findElement(By.css("a[href*='validar']"));
+            await btnBusqueda.click();
+        } catch (e) {
+            console.log("Click falló, usando JavaScript para submit...");
+            await driver.executeScript("validar();");
+        }
 
         console.log("Consulta enviada. Esperando resultados...");
 
-        // Esperar a que cargue la tabla de resultados o el contenedor con el nombre
-        // Según el HTML, el nombre aparece en un td con clase 'titulo1'
-        await driver.wait(until.elementLocated(By.className("titulo1")), 15000);
+        // Esperar más tiempo y verificar si hay resultados o mensaje de error
+        await driver.sleep(3000);
+
+        // Intentar localizar resultados con timeout más largo
+        try {
+            await driver.wait(until.elementLocated(By.className("titulo1")), 20000);
+        } catch (timeoutError) {
+            // Si no encuentra resultados, verificar si hay mensaje de error o no hay datos
+            console.log("No se encontró elemento titulo1, verificando contenido de página...");
+
+            // Obtener todo el texto visible de la página
+            const bodyText = await driver.findElement(By.tagName("body")).getText();
+            console.log("Texto de la página:", bodyText.substring(0, 500)); // Primeros 500 caracteres
+
+            // PRIMERO: Verificar si hay indicadores POSITIVOS de datos de multas
+            const hasMultasData = bodyText.includes("Pendientes") ||
+                bodyText.includes("Pagadas") ||
+                bodyText.includes("En Impugnación") ||
+                bodyText.includes("Citaciones");
+
+            // Verificar diferentes mensajes de "sin resultados"
+            const noResultsKeywords = [
+                "no se encontraron registros",
+                "sin resultados",
+                "no existe",
+                "no hay información",
+                "sin información",
+                "datos no disponibles",
+                "no se encontró información",
+                "consulta sin resultados"
+            ];
+
+            // Solo verificar "sin resultados" si NO hay datos de multas
+            if (!hasMultasData) {
+
+                const hasNoResults = noResultsKeywords.some(keyword =>
+                    bodyText.toLowerCase().includes(keyword)
+                );
+
+                if (hasNoResults) {
+                    console.log("✓ No se encontraron registros para esta identificación en ANT.");
+                    return null; // Retornar null para indicar "sin resultados"
+                }
+
+                // Si el body está prácticamente vacío o solo tiene el formulario
+                if (bodyText.length < 100) {
+                    console.log("✓ La página no retornó resultados (cuerpo vacío).");
+                    return null;
+                }
+            } else {
+                console.log("⚠️ Datos de multas detectados. Continuando extracción...");
+            }
+        }
 
         // Extraer Nombre y Puntos
         let celdasTitulo = await driver.findElements(By.className("titulo1"));
@@ -108,15 +181,26 @@ async function extraerDatos(identificacion, tipo = "CED") {
 
             for (let fila of filas) {
                 let celdas = await fila.findElements(By.tagName("td"));
+
+                // DEBUG: Imprimir todas las columnas para identificar índices correctos
+                if (infracciones.length === 0) {
+                    console.log(`📊 Total de columnas: ${celdas.length}`);
+                    for (let i = 0; i < celdas.length; i++) {
+                        const valor = await celdas[i].getText();
+                        console.log(`  Columna ${i}: "${valor}"`);
+                    }
+                }
+
                 if (celdas.length > 10) {
+                    // Basado en observación: col2=Infracción, col3=Entidad, col4=Citación,
+                    // col7=Fecha, col14=Sanción, col??=Total
                     infracciones.push({
-                        infraccion: (await celdas[1].getText()).trim(),
-                        entidad: (await celdas[2].getText()).trim(),
-                        citacion: (await celdas[3].getText()).trim(),
-                        fecha: (await celdas[6].getText()).trim(),
-                        multa: (await celdas[14].getText()).trim(),
-                        total: (await celdas[16].getText()).trim(),
-                        articulo: (await celdas[17].getText()).trim()
+                        infraccion: (await celdas[2].getText()).trim(),
+                        entidad: (await celdas[3].getText()).trim(),
+                        citacion: (await celdas[4].getText()).trim(),
+                        fecha: (await celdas[7].getText()).trim(),
+                        sancion: (await celdas[14].getText()).trim(),
+                        total: (await celdas[celdas.length - 1].getText()).trim() // Última columna
                     });
                 }
             }

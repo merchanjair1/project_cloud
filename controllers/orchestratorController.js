@@ -86,15 +86,16 @@ exports.processServiceQuery = async (req, res) => {
             identificacion = "TEXTO_GENERAL";
             tipoIdentificacion = 'texto';
         } else if (serviceType === 'ant_multas') {
-            const cedulaMatch = (text.match(/\b\d{10}\b/g) || []).find(validateCedula);
+            // ANT puede buscar por placa o cédula, pero priorizamos PLACA
             const placaMatch = extractPlaca(text);
+            const cedulaMatch = (text.match(/\b\d{10}\b/g) || []).find(validateCedula);
 
-            if (cedulaMatch) {
-                identificacion = cedulaMatch;
-                tipoIdentificacion = 'cedula';
-            } else if (placaMatch) {
+            if (placaMatch) {
                 identificacion = placaMatch;
                 tipoIdentificacion = 'placa';
+            } else if (cedulaMatch) {
+                identificacion = cedulaMatch;
+                tipoIdentificacion = 'cedula';
             }
         } else {
             return ResponseHandler.badRequest(res, 'Tipo de servicio no soportado.');
@@ -107,7 +108,7 @@ exports.processServiceQuery = async (req, res) => {
             } else if (serviceType === 'sri_matriculacion') {
                 mensajeAmigable = 'No se pudo detectar un número de placa válido en la imagen. Por favor, intente con una foto más clara.';
             } else if (serviceType === 'ant_multas') {
-                mensajeAmigable = 'No se pudo detectar un número de cédula válido en la imagen para consultar multas ANT.';
+                mensajeAmigable = 'No se pudo detectar un número de placa válido en la imagen para consultar multas ANT. Asegúrese de capturar la placa del vehículo.';
             } else {
                 mensajeAmigable = `No se pudo detectar un documento válido para ${serviceType}.`;
             }
@@ -135,9 +136,10 @@ exports.processServiceQuery = async (req, res) => {
             if (serviceType === 'luz_loja') {
                 mensajeNoEncontrado = `La cédula ${identificacion} NO ESTA REGISTRADA como cliente del servicio de luz eléctrica (EERSSA).`;
             } else if (serviceType === 'sri_matriculacion') {
-                mensajeNoEncontrado = `No se encontró información de matriculación vehicular para la placa ${identificacion}.`;
+                mensajeNoEncontrado = `No se encontró información de matriculación vehicular para la placa ${identificacion}, la placa NO ESTA REGISTRADA en el sistema del SRI.`;
             } else if (serviceType === 'ant_multas') {
-                mensajeNoEncontrado = `No se encontraron multas registradas en la ANT para la cédula ${identificacion}.`;
+                const tipoTexto = tipoIdentificacion === 'placa' ? 'la placa' : 'la cédula';
+                mensajeNoEncontrado = `No se encontraron multas registradas en la ANT para ${tipoTexto} ${identificacion}.`;
             } else {
                 mensajeNoEncontrado = `No se encontraron datos en el servicio para: ${identificacion}`;
             }

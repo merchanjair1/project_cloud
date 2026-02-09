@@ -20,15 +20,37 @@ async function extraerDatos(placa) {
         await driver.get("https://srimatricula.com/");
         console.log("Accediendo a la página...");
 
+        // Esperar a que la página cargue completamente
+        await driver.sleep(2000);
+
         // Esperar a que el input sea visible e interactuable
         let inputPlaca = await driver.wait(until.elementLocated(By.id("txtPlaca")), 10000);
         await driver.wait(until.elementIsVisible(inputPlaca), 10000);
 
-        await inputPlaca.sendKeys(placa);
-        console.log(`Placa ingresada: ${placa}`);
+        // Espera adicional para asegurar interactividad
+        await driver.sleep(1000);
+
+        // Intentar con sendKeys primero
+        try {
+            await inputPlaca.sendKeys(placa);
+            console.log(`Placa ingresada: ${placa}`);
+        } catch (e) {
+            // Si sendKeys falla, usar JavaScript para inyectar el valor
+            console.log("sendKeys falló, usando JavaScript injection...");
+            await driver.executeScript(`document.getElementById('txtPlaca').value = '${placa}'`);
+            console.log(`Placa ingresada con JS: ${placa}`);
+        }
 
         let btnConsultar = await driver.wait(until.elementLocated(By.id("btnConsultar")), 5000);
-        await btnConsultar.click();
+        await driver.sleep(500); // Pequeña espera antes del click
+
+        try {
+            await btnConsultar.click();
+        } catch (e) {
+            // Si click falla, usar JavaScript
+            console.log("Click falló, usando JavaScript...");
+            await driver.executeScript(`document.getElementById('btnConsultar').click()`);
+        }
         console.log("Botón Consultar clickeado...");
 
         await driver.wait(async () => {
