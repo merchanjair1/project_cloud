@@ -5,9 +5,23 @@ async function consultarDeuda(identificacion, tipo) {
     let options = getChromeOptions();
 
     let driver = await new Builder().forBrowser('chrome').setChromeOptions(options).build();
+    const url = 'http://186.178.204.52/kioskos/cuenc/';
 
     try {
-        await driver.get('http://186.178.204.52/kioskos/cuenc/');
+        let attempts = 0;
+        const maxAttempts = 2;
+        while (attempts < maxAttempts) {
+            try {
+                console.log(`[EERSSA] Accediendo a la página (Intento ${attempts + 1}/${maxAttempts})...`);
+                await driver.get(url);
+                break; // Éxito
+            } catch (e) {
+                attempts++;
+                console.error(`[EERSSA] Intento ${attempts} falló: ${e.message}`);
+                if (attempts >= maxAttempts) throw e;
+                await driver.sleep(2000); // Esperar antes de reintentar
+            }
+        }
 
         const opciones = {
             "cedula": "num_cedula",

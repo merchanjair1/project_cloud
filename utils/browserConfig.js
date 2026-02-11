@@ -12,8 +12,10 @@ function getChromeOptions() {
         "--disable-dev-shm-usage",
         "--disable-gpu",
         "--disable-setuid-sandbox",
-        "--remote-debugging-port=9222",
         "--disable-software-rasterizer",
+        "--disable-extensions",
+        "--disable-infobars",
+        "--no-first-run",
         "--window-size=1920,1080"
     );
     return options;

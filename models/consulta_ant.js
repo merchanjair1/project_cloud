@@ -55,9 +55,8 @@ async function extraerDatos(identificacion, tipo = "CED") {
         // Esperar más tiempo y verificar si hay resultados o mensaje de error
         await driver.sleep(3000);
 
-        // Intentar localizar resultados con timeout más largo
         try {
-            await driver.wait(until.elementLocated(By.className("titulo1")), 20000);
+            await driver.wait(until.elementLocated(By.className("titulo1")), 35000);
         } catch (timeoutError) {
             // Si no encuentra resultados, verificar si hay mensaje de error o no hay datos
             console.log("No se encontró elemento titulo1, verificando contenido de página...");

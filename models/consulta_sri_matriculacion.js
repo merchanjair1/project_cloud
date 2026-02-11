@@ -50,7 +50,7 @@ async function extraerDatos(placa) {
             let form = await driver.findElement(By.id("formVehiculo"));
             let isDisplayed = await form.isDisplayed();
             return isDisplayed;
-        }, 15000);
+        }, 30000);
 
         console.log("Datos visibles en la página...");
 
