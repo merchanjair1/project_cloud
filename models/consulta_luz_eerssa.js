@@ -12,12 +12,13 @@ async function consultarDeuda(identificacion, tipo) {
         const maxAttempts = 2;
         while (attempts < maxAttempts) {
             try {
-                console.log(`[EERSSA] Accediendo a la página (Intento ${attempts + 1}/${maxAttempts})...`);
+                console.log(`[EERSSA] Accediendo a la URL: ${url} (Intento ${attempts + 1}/${maxAttempts})...`);
                 await driver.get(url);
+                console.log("[EERSSA] Página cargada con éxito.");
                 break; // Éxito
             } catch (e) {
                 attempts++;
-                console.error(`[EERSSA] Intento ${attempts} falló: ${e.message}`);
+                console.error(`[EERSSA] Intento ${attempts} falló al cargar URL: ${e.message}`);
                 if (attempts >= maxAttempts) throw e;
                 await driver.sleep(2000); // Esperar antes de reintentar
             }
@@ -30,36 +31,54 @@ async function consultarDeuda(identificacion, tipo) {
 
         if (!opciones[tipo]) throw new Error("Tipo de consulta no válido");
 
-        await driver.wait(until.elementLocated(By.id(opciones[tipo])), 2000).click();
+        console.log(`[EERSSA] Seleccionando opción: ${tipo}...`);
+        let radioOpt = await driver.wait(until.elementLocated(By.id(opciones[tipo])), 10000);
+        await radioOpt.click();
         await driver.sleep(1000);
 
-        let inputIdentificacion = await driver.wait(until.elementLocated(By.id("input1")), 5000);
+        console.log(`[EERSSA] Ingresando identificación: ${identificacion}...`);
+        let inputIdentificacion = await driver.wait(until.elementLocated(By.id("input1")), 10000);
         await inputIdentificacion.sendKeys(identificacion);
 
-        await driver.wait(until.elementLocated(By.css("input[value='Consultar']")), 5000).click();
-        await driver.sleep(1000);
+        console.log("[EERSSA] Clic en Consultar...");
+        let btnConsultar = await driver.wait(until.elementLocated(By.css("input[value='Consultar']")), 10000);
+        await btnConsultar.click();
+        await driver.sleep(2000);
 
         try {
             let mensajeError = await driver.findElement(By.xpath("//*[contains(text(),'No existen datos para')]"));
-            if (await mensajeError.isDisplayed()) return null;
+            if (await mensajeError.isDisplayed()) {
+                console.log("[EERSSA] No se encontraron resultados en la página.");
+                return { success: false, errorType: 'NOT_FOUND', message: 'Cédula no registrada' };
+            }
         } catch { }
 
+        console.log("[EERSSA] Extrayendo datos del contribuyente...");
         let resultadosPrimerTabla = await extraerDatosTabla(driver, "#resultados table");
         let contribuyente = resultadosPrimerTabla.length > 0 ? resultadosPrimerTabla[0] : null;
 
-        let enlaceConsultarDeuda = await driver.wait(until.elementLocated(By.css("a[href^='javascript:mostrarDeuda']")), 2000);
+        console.log("[EERSSA] Clic en detalle de deuda...");
+        let enlaceConsultarDeuda = await driver.wait(until.elementLocated(By.css("a[href^='javascript:mostrarDeuda']")), 10000);
         await enlaceConsultarDeuda.click();
+        await driver.sleep(1500);
 
+        console.log("[EERSSA] Extrayendo detalle de deuda...");
         let resultadosDeuda = await extraerDatosDeuda(driver, "#vent table");
         let deudaData = Object.keys(resultadosDeuda).length ? resultadosDeuda : null;
 
+        console.log("[EERSSA] Proceso completado con éxito.");
         return {
+            success: true,
             contribuyente: contribuyente,
             deuda: deudaData
         };
     } catch (error) {
-        console.error("Error:", error);
-        return null;
+        console.error("[EERSSA] Error fatal:", error.message);
+        return {
+            success: false,
+            errorType: 'CONNECTION_ERROR',
+            message: error.message
+        };
     } finally {
         await driver.sleep(1000);
         await driver.quit();

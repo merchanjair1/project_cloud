@@ -131,6 +131,29 @@ exports.processServiceQuery = async (req, res) => {
         // 3. Consultar Servicio Automáticamente
         if (serviceType === 'luz_loja') {
             resultadoServicio = await eerssaModel.consultarDeuda(identificacion, 'cedula');
+
+            // Manejo específico para EERSSA que ahora retorna objeto de error
+            if (resultadoServicio && resultadoServicio.success === false) {
+                if (resultadoServicio.errorType === 'CONNECTION_ERROR') {
+                    return res.status(503).json({
+                        success: false,
+                        code: 503,
+                        error: "El servicio de EERSSA no está disponible actualmente por problemas de conexión desde el servidor de despliegue.",
+                        details: resultadoServicio.message
+                    });
+                } else if (resultadoServicio.errorType === 'NOT_FOUND') {
+                    return ResponseHandler.notFound(res, `La cédula ${identificacion} NO ESTA REGISTRADA como cliente del servicio de luz eléctrica (EERSSA).`);
+                }
+            }
+            // Si tuvo éxito, extraemos la data real para que el resto del controlador siga igual
+            if (resultadoServicio && resultadoServicio.success) {
+                resultadoServicio = {
+                    contribuyente: resultadoServicio.contribuyente,
+                    deuda: resultadoServicio.deuda
+                };
+            } else {
+                resultadoServicio = null; // Fallback para lógica antigua si es otro tipo de error
+            }
         } else if (serviceType === 'sri_matriculacion') {
             resultadoServicio = await sriModel.extraerDatos(identificacion);
         } else if (serviceType === 'claro_planes') {
