@@ -7,7 +7,8 @@ const textoGeneralModel = require('../models/consulta_texto_general');
 const ResponseHandler = require('../utils/responseHandler');
 
 // Validación de Cédula (Algoritmo Módulo 10)
-function validateCedula(cedula) {
+function validateCedula(cedulaRaw) {
+    const cedula = cedulaRaw.replace(/-/g, ''); // Eliminar guiones
     if (cedula.length !== 10) return false;
     const province = parseInt(cedula.slice(0, 2));
     if (province < 1 || (province > 24 && province !== 30)) return false;
@@ -55,9 +56,13 @@ exports.processServiceQuery = async (req, res) => {
 
         // 2. Lógica de Detección según Servicio
         if (serviceType === 'luz_loja') {
-            const matches = text.match(/\b\d{10}\b/g) || [];
-            identificacion = matches.find(validateCedula);
-            tipoIdentificacion = 'cedula';
+            // Buscar cédula (10 dígitos o 9-1)
+            const matches = text.match(/\b\d{9}-?\d{1}\b/g) || [];
+            const rawId = matches.find(validateCedula);
+            if (rawId) {
+                identificacion = rawId.replace(/-/g, '');
+                tipoIdentificacion = 'cedula';
+            }
         } else if (serviceType === 'claro_planes') {
             const matches = text.match(/\b09\d{8}\b/g) || [];
             identificacion = matches.find(validateCelular);
@@ -66,7 +71,13 @@ exports.processServiceQuery = async (req, res) => {
             identificacion = extractPlaca(text);
             tipoIdentificacion = 'placa';
         } else if (serviceType === 'ocr_cedula') {
-            identificacion = (text.match(/\d{10}/g) || []).find(validateCedula);
+            const matches = text.match(/\b\d{9}-?\d{1}\b/g) || [];
+            const rawId = matches.find(validateCedula);
+
+            if (rawId) {
+                identificacion = rawId.replace(/-/g, ''); // Limpiar guion para consistencia
+                // Nota: Podríamos devolver rawId si queremos mostrar el guion, pero mejor estándar.
+            }
             tipoIdentificacion = 'cedula';
 
             let textBack = '';
@@ -78,7 +89,8 @@ exports.processServiceQuery = async (req, res) => {
             resultadoServicio = {
                 ocr_frontal: text,
                 ocr_reverso: textBack,
-                es_doble_cara: true
+                es_doble_cara: true,
+                identificacion_detectada: identificacion // Usamos la limpia
             };
 
             if (!identificacion) identificacion = "NO_DETECTADA";
@@ -88,13 +100,14 @@ exports.processServiceQuery = async (req, res) => {
         } else if (serviceType === 'ant_multas') {
             // ANT puede buscar por placa o cédula, pero priorizamos PLACA
             const placaMatch = extractPlaca(text);
-            const cedulaMatch = (text.match(/\b\d{10}\b/g) || []).find(validateCedula);
+            const cedulaMatches = (text.match(/\b\d{9}-?\d{1}\b/g) || []);
+            const rawCedula = cedulaMatches.find(validateCedula);
 
             if (placaMatch) {
                 identificacion = placaMatch;
                 tipoIdentificacion = 'placa';
-            } else if (cedulaMatch) {
-                identificacion = cedulaMatch;
+            } else if (rawCedula) {
+                identificacion = rawCedula.replace(/-/g, '');
                 tipoIdentificacion = 'cedula';
             }
         } else {
