@@ -1,17 +1,8 @@
 const { Builder, By, until } = require('selenium-webdriver');
-const chrome = require('selenium-webdriver/chrome');
+const { getChromeOptions } = require('../utils/browserConfig');
 
 async function consultarDeuda(identificacion, tipo) {
-    let options = new chrome.Options();
-    options.addArguments(
-        "--headless=new",
-        "--no-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--disable-software-rasterizer",
-        "--disable-setuid-sandbox",
-        "--remote-debugging-port=9222"
-    );
+    let options = getChromeOptions();
 
     let driver = await new Builder().forBrowser('chrome').setChromeOptions(options).build();
 

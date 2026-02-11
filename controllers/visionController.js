@@ -1,6 +1,5 @@
 const visionService = require('../services/ocrService');
 
-// Algoritmo robusto de validación de cédula (Módulo 10)
 function validateCedula(cedula) {
   if (cedula.length !== 10) return false;
   const province = parseInt(cedula.slice(0, 2));
@@ -25,7 +24,6 @@ async function detectText(req, res) {
 
     const text = await visionService.detectTextFromBase64(base64Image);
     
-    // Buscar números de 10 dígitos y validar el primero que cumpla
     const matches = text.match(/\b\d{10}\b/g) || [];
     const validCedula = matches.find(validateCedula);
 

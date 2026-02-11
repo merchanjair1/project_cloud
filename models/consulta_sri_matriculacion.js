@@ -1,15 +1,8 @@
 const { Builder, By, until } = require("selenium-webdriver");
-const chrome = require("selenium-webdriver/chrome");
+const { getChromeOptions } = require("../utils/browserConfig");
 
 async function extraerDatos(placa) {
-    const options = new chrome.Options();
-    options.addArguments(
-        "--headless=new",
-        "--no-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-setuid-sandbox",
-        "--window-size=1920,1080"
-    );
+    const options = getChromeOptions();
 
     let driver = await new Builder()
         .forBrowser("chrome")

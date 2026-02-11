@@ -1,12 +1,8 @@
 const { Builder, By, until } = require("selenium-webdriver");
-const chrome = require("selenium-webdriver/chrome");
+const { getChromeOptions } = require("./utils/browserConfig");
 
 async function testClaroSelector() {
-    const options = new chrome.Options();
-    options.addArguments("--headless=new");
-    options.addArguments("--disable-gpu");
-    options.addArguments("--no-sandbox");
-    options.addArguments("--disable-dev-shm-usage");
+    const options = getChromeOptions();
 
     let driver = await new Builder()
         .forBrowser("chrome")
